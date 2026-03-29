@@ -1,0 +1,118 @@
+{
+  "$schema": "https://www.getbifrost.ai/schema",
+
+  "providers": {
+    "openai": {
+      "keys": [
+        {
+          "name": "openai-key",
+          "value": "env.OPENAI_API_KEY",
+          "weight": 1,
+          "models": ["gpt-4o-mini", "text-embedding-3-small"]
+        }
+      ]
+    },
+    "gemini": {
+      "keys": [
+        {
+          "name": "gemini-key",
+          "value": "env.GOOGLE_API_KEY",
+          "weight": 1,
+          "models": ["gemma-2-27b-it"]
+        }
+      ]
+    },
+    "openrouter": {
+      "keys": [
+        {
+          "name": "openrouter-key",
+          "value": "env.OPENROUTER_API_KEY",
+          "weight": 1,
+          "models": ["mistralai/mistral-large"]
+        }
+      ]
+    }
+  },
+
+  "vector_store": {
+    "enabled": true,
+    "type": "redis",
+    "config": {
+      "addr": "bifrost-redis:6379",
+      "password": "env.REDIS_PASSWORD"
+    }
+  },
+
+  "plugins": [
+    {
+      "enabled": true,
+      "name": "semantic_cache",
+      "config": {
+        "provider": "openai",
+        "embedding_model": "text-embedding-3-small",
+        "dimension": 1536,
+        "ttl": "5m",
+        "threshold": 0.8,
+        "conversation_history_threshold": 3,
+        "cleanup_on_shutdown": true,
+        "cache_by_model": true,
+        "cache_by_provider": true,
+        "exclude_system_prompt": false
+      }
+    },
+    {
+      "enabled": true,
+      "name": "governance",
+      "config": {}
+    }
+  ],
+
+  "governance": {
+    "virtual_keys": [
+      {
+        "id": "vk-default",
+        "name": "Default API Key",
+        "value": "vk-default-key",
+        "is_active": true,
+        "provider_configs": [
+          {
+            "provider": "openai",
+            "weight": 0.33,
+            "allowed_models": ["gpt-4o-mini"]
+          },
+          {
+            "provider": "gemini",
+            "weight": 0.33,
+            "allowed_models": ["gemma-2-27b-it"]
+          },
+          {
+            "provider": "openrouter",
+            "weight": 0.34,
+            "allowed_models": ["mistralai/mistral-large"]
+          }
+        ],
+        "budget_id": "budget-default",
+        "rate_limit_id": "rate-limit-default"
+      }
+    ],
+    "budgets": [
+      {
+        "id": "budget-default",
+        "max_limit": 50.00,
+        "reset_duration": "1M",
+        "current_usage": 0.0
+      }
+    ],
+    "rate_limits": [
+      {
+        "id": "rate-limit-default",
+        "token_max_limit": 50000,
+        "token_reset_duration": "1h",
+        "token_current_usage": 0,
+        "request_max_limit": 100,
+        "request_reset_duration": "1m",
+        "request_current_usage": 0
+      }
+    ]
+  }
+}
